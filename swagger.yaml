@@ -253,8 +253,8 @@ components:
           type: integer
         user:
           type: integer
-        currency:
-          type: string
+        coin:
+          type: integer
         amount:
           type: number
           format: float
