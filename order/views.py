@@ -54,7 +54,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 total = sum(o.amount * price for o in pending_orders)
                 if total + usd_value >= ORDER_MIN_USD_VALUE:
                     pending_orders.update(status=ORDER_STATUS_COMPLETED)
-                    total_amount_to_buy = sum(o.amount for o in pending_orders)
+                    total_amount_to_buy = total + usd_value
         else:
             total_amount_to_buy = order.amount
 
@@ -62,5 +62,5 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.status = ORDER_STATUS_COMPLETED
             order.save()
             buy_from_exchange(coin.name, total_amount_to_buy)
-
+    
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
