@@ -50,28 +50,23 @@ class OrderViewSet(viewsets.ModelViewSet):
         wallet.deduct(usd_value)
         order = serializer.save(user=request.user, price_at_purchase=price, status=ORDER_STATUS_PENDING)
         total_amount_to_buy = 0
+
         if usd_value < ORDER_MIN_USD_VALUE:
             lock_key = f"order:{currency}"
-            lock = redis_client.lock(lock_key, timeout=REDIS_LOCK_TIMEOUT)
-            if lock.acquire(blocking=True):
-                try:
-                    pending_orders = Order.objects.filter(currency=currency, status=ORDER_STATUS_PENDING)
-                    total = sum(o.amount * price for o in pending_orders)
-                    if total >= ORDER_MIN_USD_VALUE:
-                        order.status = ORDER_STATUS_COMPLETED
-                        order.save()
-                        total_amount_to_buy = sum(o.amount for o in pending_orders)
-                        Order.objects.filter(id__in=[o.id for o in pending_orders]).update(status=ORDER_STATUS_COMPLETED)
-                finally:
-                    if lock.owned():
-                        lock.release()
+            with redis_client.lock(lock_key, timeout=REDIS_LOCK_TIMEOUT):
+                pending_orders = Order.objects.filter(currency=currency, status=ORDER_STATUS_PENDING)
+                total = sum(o.amount * price for o in pending_orders)
+                if total >= ORDER_MIN_USD_VALUE:
+                    pending_orders.update(status=ORDER_STATUS_COMPLETED)
+                    total_amount_to_buy = sum(o.amount for o in pending_orders)
         else:
             order.status = ORDER_STATUS_COMPLETED
             order.save()
             total_amount_to_buy = order.amount
 
         if total_amount_to_buy > ORDER_MIN_USD_VALUE:
+            order.status = ORDER_STATUS_COMPLETED
+            order.save()
             buy_from_exchange(currency, total_amount_to_buy)
 
-        headers = self.get_success_headers(serializer.data)
-        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
