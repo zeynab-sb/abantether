@@ -3,6 +3,7 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from wallet.models import Wallet
 from order.models import Order
+from coin.models import Coin
 from rest_framework.authtoken.models import Token
 
 class OrderAPITests(APITestCase):
@@ -13,8 +14,10 @@ class OrderAPITests(APITestCase):
         self.token2 = Token.objects.create(user=self.user2)
         self.wallet1 = Wallet.objects.create(user=self.user1, balance=100)
         self.wallet2 = Wallet.objects.create(user=self.user2, balance=100)
-        self.order1 = Order.objects.create(user=self.user1, currency='ABAN', amount=5)
-        self.order2 = Order.objects.create(user=self.user2, currency='BTC', amount=2)
+        self.coin_aban, _ = Coin.objects.get_or_create(name='ABAN', price=2)
+        self.coin_btc, _ = Coin.objects.get_or_create(name='BTC', price=10)
+        self.order1 = Order.objects.create(user=self.user1, coin=self.coin_aban, amount=5)
+        self.order2 = Order.objects.create(user=self.user2, coin=self.coin_btc, amount=2)
         self.auth_header1 = {'HTTP_AUTHORIZATION': f'Token {self.token1.key}'}
         self.auth_header2 = {'HTTP_AUTHORIZATION': f'Token {self.token2.key}'}
 
@@ -24,12 +27,14 @@ class OrderAPITests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], self.order1.id)
+        self.assertEqual(response.data[0]['coin'], self.coin_aban.id)
 
     def test_get_order_by_id_success(self):
         url = reverse('order-detail', args=[self.order1.id])
         response = self.client.get(url, **self.auth_header1)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['id'], self.order1.id)
+        self.assertEqual(response.data['coin'], self.coin_aban.id)
 
     def test_get_order_by_id_not_found(self):
         url = reverse('order-detail', args=[self.order2.id])
@@ -41,7 +46,7 @@ class OrderAPITests(APITestCase):
         data = {'currency': 'ABAN', 'amount': 10}
         response = self.client.post(url, data, format='json', **self.auth_header1)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data['currency'], 'ABAN')
+        self.assertEqual(response.data['coin'], self.coin_aban.id)
         self.assertEqual(float(response.data['amount']), 10.0)
 
     def test_post_order_insufficient_balance(self):

@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'order',
     'user',
     'wallet',
+    'coin',
 ]
 
 MIDDLEWARE = [
