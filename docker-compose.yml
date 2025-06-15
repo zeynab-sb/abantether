@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: abandtether_db
-      POSTGRES_USER: abandtether_user
-      POSTGRES_PASSWORD: abandtether_password
+      POSTGRES_DB: abantether_db
+      POSTGRES_USER: abantether_user
+      POSTGRES_PASSWORD: abantether_password
     ports:
       - "5432:5432"
     volumes:
@@ -31,11 +31,11 @@ services:
       - redis
     environment:
       - DEBUG=1
-      - DJANGO_DB_HOST=db
-      - DJANGO_DB_PORT=5432
-      - DJANGO_DB_NAME=abandtether_db
-      - DJANGO_DB_USER=abantether_user
-      - DJANGO_DB_PASSWORD=abantether_password
+      - DB_NAME=abantether_db
+      - DB_USER=abantether_user
+      - DB_PASSWORD=abantether_password
+      - DB_HOST=db
+      - DB_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
 
