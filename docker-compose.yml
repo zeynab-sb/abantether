@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: abandtether_db
+      POSTGRES_USER: abandtether_user
+      POSTGRES_PASSWORD: abandtether_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DEBUG=1
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_PORT=5432
+      - DJANGO_DB_NAME=abandtether_db
+      - DJANGO_DB_USER=abantether_user
+      - DJANGO_DB_PASSWORD=abantether_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+volumes:
+  postgres_data:
